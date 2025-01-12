@@ -45,6 +45,7 @@ class WebNovelHttpDataSource(
 
     val providers = mapOf(
         Alphapolis.id to Alphapolis(client),
+        Fc2Novel.id to Fc2Novel(client),
         Hameln.id to Hameln(client),
         Kakuyomu.id to Kakuyomu(client),
         Novelup.id to Novelup(client),

@@ -27,12 +27,11 @@ class Fc2Novel(
     }
 
     override suspend fun getMetadata(novelId: String): RemoteNovelMetadata {
-        val metadataUrl = "https://novel.fc2.com/novel.php?mode=tc&nid=$novelId"
-        val doc = getDocument(metadataUrl)
+        val doc = getDocument("https://novel.fc2.com/novel.php?cnsnt=1&mode=tc&nid=$novelId")
 
         val title = doc
             .selectFirst(".default_page_title")!!
-            .text()
+            .ownText()
 
         val author = doc
             .selectFirst(".username > a")!!
@@ -75,7 +74,7 @@ class Fc2Novel(
         val toc = buildList {
             var currentPage = doc
             for (i in 0..LOOP_LIMIT) {
-                if (i >= LOOP_LIMIT) throw RuntimeException("已循环${i}次，仍未获取完小说目录，可能陷入了死循环")
+                if (i >= LOOP_LIMIT) throw RuntimeException("死循环保护：已循环${i}次，仍未获取完小说目录，停止尝试")
 
                 currentPage.select("li.novel_subtitle > a").forEach { el ->
                     add(
@@ -101,8 +100,8 @@ class Fc2Novel(
             type = type,
             attentions = attentions,
             keywords = keywords,
-            points = 0, // TODO: fc2 novel 没有点数
-            totalCharacters = 0, // TODO: fc2 novel 没地方能获取
+            points = 0, // TODO: fc2没有点数
+            totalCharacters = 0, // TODO: fc2没地方获取小说字数
             introduction = introduction,
             toc = toc
         )

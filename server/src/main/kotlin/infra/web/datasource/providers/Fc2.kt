@@ -10,12 +10,13 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import org.jsoup.nodes.Document
 
-class Fc2Novel(
+class Fc2(
     private val client: HttpClient,
 ) : WebNovelProvider {
     companion object {
-        const val id = "fc2novel"
-        const val LOOP_LIMIT = 100
+        const val id = "fc2"
+        const val TOC_LOOP_LIMIT = 100
+        const val CHAPTER_LOOP_LIMIT = 500
     }
     override suspend fun getRank(options: Map<String, String>): Page<RemoteNovelListItem> {
         return emptyPage()
@@ -73,8 +74,8 @@ class Fc2Novel(
 
         val toc = buildList {
             var currentPage = doc
-            for (i in 0..LOOP_LIMIT) {
-                if (i >= LOOP_LIMIT) throw RuntimeException("死循环保护：已循环${i}次，仍未获取完小说目录，停止尝试")
+            for (i in 0..TOC_LOOP_LIMIT) {
+                if (i >= TOC_LOOP_LIMIT) throw RuntimeException("死循环保护：已循环${i}次，仍未获取完小说目录，停止尝试")
 
                 currentPage.select("li.novel_subtitle > a").forEach { el ->
                     add(
@@ -85,11 +86,11 @@ class Fc2Novel(
                         )
                     )
                 }
+
                 val nextPageUrl = currentPage
                     .selectFirst(".navi_page.navi_prev_next > li.right > a")
                     ?.absUrl("href")
-                if (nextPageUrl == null) break
-
+                    ?: break
                 currentPage = getDocument(nextPageUrl)
             }
         }
@@ -111,6 +112,8 @@ class Fc2Novel(
         novelId: String,
         chapterId: String
     ): RemoteChapter {
-        TODO("Not yet implemented")
+        val doc = getDocument("https://novel.fc2.com/novel.php?mode=rd&nid=$novelId&pg=$chapterId&cnsnt=1")
+
+        return RemoteChapter(paragraphs = emptyList()) // TODO
     }
 }

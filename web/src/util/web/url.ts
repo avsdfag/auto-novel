@@ -104,6 +104,18 @@ const alphapolis: Provider = {
   },
 };
 
+const fc2: Provider = {
+  parseUrl(url: string): string | undefined {
+    return /novel\.fc2\.com\/novel\.php\?.*nid=(\d+)/.exec(url)?.[1];
+  },
+  buildNovelUrl(novelId: string): string {
+    return `https://novel.fc2.com/novel.php?mode=tc&nid=${novelId}`;
+  },
+  buildChapterUrl(novelId: string, chapterId: string): string {
+    return `https://novel.fc2.com/novel.php?mode=rd&nid=${novelId}&pg=${chapterId}`;
+  },
+};
+
 // 弃用，为了兼容以前的小说暂时保留
 const novelism: Provider = {
   parseUrl(url: string): string | undefined {
@@ -124,6 +136,7 @@ const providers: { [id: string]: Provider } = {
   hameln,
   pixiv,
   alphapolis,
+  fc2,
   novelism,
 };
 

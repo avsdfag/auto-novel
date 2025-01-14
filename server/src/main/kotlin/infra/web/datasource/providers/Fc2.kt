@@ -9,6 +9,8 @@ import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
+import org.jsoup.nodes.TextNode
 
 class Fc2(
     private val client: HttpClient,
@@ -24,7 +26,7 @@ class Fc2(
     }
 
     private suspend fun getDocument(url: String): Document {
-        return client.get(url).document().also { it.setBaseUri(url) }
+        return client.get(url).document().apply { setBaseUri(url) }
     }
 
     override suspend fun getMetadata(novelId: String): RemoteNovelMetadata {
@@ -114,6 +116,54 @@ class Fc2(
     ): RemoteChapter {
         val doc = getDocument("https://novel.fc2.com/novel.php?mode=rd&nid=$novelId&pg=$chapterId&cnsnt=1")
 
-        return RemoteChapter(paragraphs = emptyList()) // TODO
+        val paragraphs = buildList {
+            var currentPage = doc
+
+            for (i in 1..CHAPTER_LOOP_LIMIT) {
+                if (i >= CHAPTER_LOOP_LIMIT) throw RuntimeException("死循环保护：已循环${i}次，仍未获取完小说内容，停止尝试")
+                // 获取本页内容，如果为--- 鋭意連載中 ---，无内容，退出
+                val el = currentPage
+                    .selectFirst("div.novel_body")
+                    ?: break
+
+                val novelSubtitle = currentPage.selectFirst(".novel_subtitle")
+                when {
+                    i == 1 && novelSubtitle == null -> throw RuntimeException("第1页无标题，非章节起始页")
+                    i >= 2 && novelSubtitle != null -> break // 从第2页开始，碰到标题代表章节结束，退出
+                }
+
+                val text = StringBuilder().apply {
+                    el
+                        .childNodes()
+                        .forEach {
+                            if (it is Element) {
+                                if (it.tagName() == "br") {
+                                    append('\n')
+                                } else {
+                                    append(it.text())
+                                }
+                            } else if (it is TextNode) {
+                                append(it.text())
+                            }
+                        }
+                }
+
+                addAll(
+                    text
+                        .removePrefix(" ")
+                        .removeSuffix(" ")
+                        .lines()
+                )
+
+                // 去下一页，如果不存在下一页，退出
+                val nextPageUrl = currentPage
+                    .selectFirst(".navi_page.navi_prev_next > li.right > a")
+                    ?.absUrl("href")
+                    ?: break
+                currentPage = getDocument(nextPageUrl)
+            }
+        }
+
+        return RemoteChapter(paragraphs = paragraphs)
     }
 }

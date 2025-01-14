@@ -46,7 +46,19 @@ class Fc2Test : DescribeSpec(), KoinTest {
                 // https://novel.fc2.com/novel.php?mode=rd&nid=13762&pg=1
                 val episode = provider.getChapter("13762", "1")
                 episode.paragraphs[2].shouldBe("　なぜ、子供の悪口を言う親がいるの？")
+                episode.paragraphs[72].shouldBe("中性に生まれた僕の心は、いつも孤独だった。")
             }
+            it("鋭意連載中") {
+                // https://novel.fc2.com/novel.php?mode=rd&nid=217316&pg=8
+                val episode = provider.getChapter("217316", "8")
+                episode.paragraphs.shouldBeEmpty()
+            }
+            it("最后一章") {
+                // https://novel.fc2.com/novel.php?mode=rd&nid=206538&pg=10
+                val episode = provider.getChapter("206538", "10")
+                episode.paragraphs.first().shouldBe("「やだ、明彦。助けて、とまんない、ああ、また、く、来るぅう」")
+            }
+            // TODO: 支持图像 https://novel.fc2.com/novel.php?mode=rd&nid=206538&pg=11
         }
     }
 }
